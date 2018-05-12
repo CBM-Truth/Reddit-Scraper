@@ -52,13 +52,13 @@ def get_resolution(title):
             title = title.replace(char, '')
     title = list(title)
     for i in range(len(title)):
-        if (is_float(title[i]) and i >= len(title)*0.6):
+        if is_float(title[i]) and i >= len(title)*0.6:
             res.append(title[i])
     for element in res[:int(len(res) / 2)]:
         width += element
     for element in res[int(len(res) / 2):]:
         height += element
-    if (len(width) == 0 or len(height) == 0):
+    if len(width) == 0 or len(height) == 0:
             width, height = 0, 0
     return int(width), int(height)
 
@@ -66,7 +66,7 @@ def get_resolution(title):
 #returns false otherwise
 def compatable(post):
     width, height = get_resolution(post.title)
-    return width >= SCREEN_WIDTH and height >= SCREEN_HEIGHT and (width > height)
+    return width >= SCREEN_WIDTH and height >= SCREEN_HEIGHT and width > height
 
 #post: removes problematic characters from a reddit post title for parsing,
 # returns a new cleaned up string
@@ -81,7 +81,7 @@ def cleanup_title(text):
 def cleanup_url(url):
     retStr = url
     url = url.split('.')
-    if (url[len(url) - 1] != 'jpg'):
+    if url[len(url) - 1] != 'jpg':
             retStr += '.jpg'
     return retStr
 
@@ -91,7 +91,7 @@ def size_filter(main_path):
     dels = 0
     for sub_path in os.listdir(main_path):
         file = os.path.join(main_path, sub_path)
-        if (os.path.getsize(file) / 1000 < 300):
+        if os.path.getsize(file) / 1000 < 300:
             os.remove(file)
             dels += 1
     return dels
@@ -117,10 +117,10 @@ def get_images(subreddits, max_images, target_path):
 
         for sub in subreddits:
             for post in reddit.subreddit(sub).hot(limit=int(max_images)):
-                if (compatable(post)):
+                if compatable(post):
                     submissions.append(post)
 
-        if (len(submissions) == 0):
+        if len(submissions) == 0:
             print('No compatable images found.')
             sys.exit()
             
