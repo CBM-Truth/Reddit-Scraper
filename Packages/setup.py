@@ -7,8 +7,8 @@ base = None
 
 executables = [Executable("main.py", base=base)]
 
-packages = ["idna","rs3","praw","os","time",
-            "sys","urllib.request","urllib","auxv2"]
+packages = ["idna","praw","os","time",
+            "sys","urllib.request","urllib","ctypes"]
             
 options = {
     'build_exe': {
@@ -19,7 +19,7 @@ options = {
 
 setup(
     options = options,
-    version = "0.2"
+    version = "0.2",
     description = 'Reddit Scraper',
     executables = executables
 )

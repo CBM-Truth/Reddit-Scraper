@@ -1,11 +1,11 @@
-from auxv2 import compatable, cleanup_title, cleanup_url, size_filter
 import urllib.request as web
-import urllib
-import praw
-import os
-import os.path
-import sys
-import time
+import ctypes as c 
+import urllib, praw, os, os.path, sys, time
+    
+user = c.windll.user32
+
+SCREEN_WIDTH = user.GetSystemMetrics(0) 
+SCREEN_HEIGHT = user.GetSystemMetrics(1)
 
 #post: If there is no file present containg a target location, a new file is made
 # and the path is written. Will read the path from the file and return it as a string
@@ -23,6 +23,15 @@ def get_target_path():
 def create_target_path(path):
     f = open('target_path.txt', 'w')
     f.write(path)
+    f.close()
+
+#post: logs time of current execution to a log file on startup
+def log(reddits):
+    current_time = time.asctime(time.localtime(time.time()))
+    f = open('log.txt', 'w')
+    f.write(current_time + '\n')
+    f.write('Subreddits searched: ' + reddits + '\n')
+    f.write('--------------------------------\n')
     f.close()
 
 #post: Returns true if argument is of the float class, false otherwise
@@ -57,7 +66,7 @@ def get_resolution(title):
 #returns false otherwise
 def compatable(post):
     width, height = get_resolution(post.title)
-    return (width >= 1920 and height >= 1080) and (width > height)
+    return width >= SCREEN_WIDTH and height >= SCREEN_HEIGHT and (width > height)
 
 #post: removes problematic characters from a reddit post title for parsing,
 # returns a new cleaned up string
@@ -124,20 +133,20 @@ def get_images(subreddits, max_images, target_path):
             file = os.path.join(target_path, file_name)
             new_file = os.path.join(current_path, file_name)
             score = post.ups
-            if (not os.path.exists(file)): 
+            if not os.path.exists(file): 
                 try:
-                    imgfile = open(file_name,'wb')
+                    file = open(file_name,'wb')
                 except FileNotFoundError:
                     print('File not found.')
                     fileErrors += 1 
                     continue
                 try:
-                    imgfile.write(web.urlopen(cleanup_url(post.url)).read())
-                    imgfile.close()
+                    file.write(web.urlopen(cleanup_url(post.url)).read())
+                    file.close()
                     os.rename(new_file, file)
                     downloads += 1
                 except Exception as e:
-                    imgfile.close()
+                    file.close()
                     os.remove(new_file)
                     fileErrors += 1
                 try:
@@ -149,22 +158,31 @@ def get_images(subreddits, max_images, target_path):
                 print('Image already exists.')
 
         dels = size_filter(target_path)
+        
         print(str(downloads - dels) + ' new image(s) downloaded.')
         print(str(dels) + ' image(s) truncated due to a file size < 300KB.')
+        
         os.startfile(target_path)
+        
         print("File/HTTP Errors: {}, String Encoding Errors: {}"
                 .format(str(fileErrors),str(encodeErrors)))
+        
         time.sleep(3)
 
 #####################################################
 #Main----->
 
 #Getting required input from prompts
-user_reddits = input("Enter subreddit(s) to pull images from spereated with commas and no spaces: ")
+reddits = input("Enter subreddit(s) to pull images from spereated with commas and no spaces: ")
 user_max = input("Enter max number of images to pull from each subreddit: ")
+            
+log(reddits)
 
 #Call to get_images with required input
-get_images(user_reddits.split(','), user_max, get_target_path())
+get_images(reddits.split(','), user_max, get_target_path())
+
+
+
 
 
  
