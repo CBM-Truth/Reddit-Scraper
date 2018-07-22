@@ -112,15 +112,14 @@ def size_filter(main_path):
 def get_images(subreddits, _max, target_path):
         httpErrors = 0
         fileErrors = 0
-        encodeErrors = 0
+        downloads = 0
+        good_posts = []
         current_path = os.getcwd()
         reddit = praw.Reddit(
                  client_id='TB0-ZpHZQF6Qog',
                  client_secret='Rz4XNGcDBZVMQE45IpB0EBl-p3s',
                  user_agent='windows:cbm.projects.imagescraper:v2.0 (by /u/PTTruTH)'
                  )
-        good_posts = []
-        downloads = 0
         print('Detected Resolution: [{}x{}]'.format(str(SCREEN_WIDTH), str(SCREEN_HEIGHT)))
 
         for sub in subreddits.replace(' ', '').split(','):
