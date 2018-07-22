@@ -113,20 +113,20 @@ def get_images(subreddits, _max, target_path):
         httpErrors = 0
         fileErrors = 0
         encodeErrors = 0
-
         current_path = os.getcwd()
         reddit = praw.Reddit(
                  client_id='TB0-ZpHZQF6Qog',
                  client_secret='Rz4XNGcDBZVMQE45IpB0EBl-p3s',
                  user_agent='windows:cbm.projects.imagescraper:v2.0 (by /u/PTTruTH)'
                  )
-
         good_posts = []
         downloads = 0
-        print('Detected Resolution: [' + str(SCREEN_WIDTH) + 'x' + str(SCREEN_HEIGHT) + ']')
+        print('Detected Resolution: [{}x{}]'.format(str(SCREEN_WIDTH), str(SCREEN_HEIGHT)))
 
         for sub in subreddits.replace(' ', '').split(','):
-            for post in reddit.subreddit(sub + 'porn').hot(limit=int(_max)):
+            if 'porn' not in sub:
+                sub += 'porn'
+            for post in reddit.subreddit(sub).hot(limit=int(_max)):
                 if compatable(post):
                     good_posts.append(post)
 
@@ -167,12 +167,12 @@ def get_images(subreddits, _max, target_path):
         new_download_count = downloads - dels
         print(str(new_download_count) + ' new image(s) downloaded')
         print(str(dels) + ' image(s) truncated due to a file size < 300KB')
-        os.startfile(target_path)
         errors = 'File/HTTP Errors: {}, String Encoding Errors: {}'.format(str(fileErrors),str(encodeErrors))
         print(errors)
         print('Opening image directory and exiting...')
         log(subreddits, new_download_count, errors)
-        time.sleep(3)
+        time.sleep(1.5)
+        os.startfile(target_path)
 
 #####################################################
 #Main----->
