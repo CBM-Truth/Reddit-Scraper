@@ -26,11 +26,19 @@ def create_target_path(path):
     f.close()
 
 #post: logs time of current execution to a log file on startup
-def log(reddits):
+def log(reddits, dls, errs):
+    if not os.path.exists('log.txt'):
+        mode = 'w'
+    else:
+        mode = 'a'
+    f = open('log.txt', mode)
+    reddits = reddits.replace(' ', '')
+    reddits = reddits.replace(',', ', ')
     current_time = time.asctime(time.localtime(time.time()))
-    f = open('log.txt', 'w')
     f.write(current_time + '\n')
-    f.write('Subreddits searched: ' + reddits + '\n')
+    f.write('Subreddits searched: ' + str(reddits) + '\n')
+    f.write('Images downloaded: ' + str(dls) + '\n')
+    f.write('Encountered errors: ' + errs + '\n')
     f.write('--------------------------------\n')
     f.close()
 
@@ -54,9 +62,10 @@ def get_resolution(title):
     for i in range(len(title)):
         if is_float(title[i]) and i >= len(title)*0.6:
             res.append(title[i])
-    for element in res[:int(len(res) / 2)]:
+    mid = int(len(res) / 2)
+    for element in res[:mid]:
         width += element
-    for element in res[int(len(res) / 2):]:
+    for element in res[mid:]:
         height += element
     if len(width) == 0 or len(height) == 0:
             width, height = 0, 0
@@ -90,9 +99,9 @@ def cleanup_url(url):
 def size_filter(main_path):
     dels = 0
     for sub_path in os.listdir(main_path):
-        file = os.path.join(main_path, sub_path)
-        if os.path.getsize(file) / 1000 < 300:
-            os.remove(file)
+        _file = os.path.join(main_path, sub_path)
+        if os.path.getsize(_file) / 1000 < 300:
+            os.remove(_file)
             dels += 1
     return dels
 
@@ -100,7 +109,7 @@ def size_filter(main_path):
 #pre: target_path is a valid directory, throws and exception if otherwise
 #post: downloads all compatable images from the passed subreddits, searches for a max of max_images from
 #each subreddit. All images are placed in the target_path destination at the end of runtime
-def get_images(subreddits, max_images, target_path):
+def get_images(subreddits, _max, target_path):
         httpErrors = 0
         fileErrors = 0
         encodeErrors = 0
@@ -112,74 +121,69 @@ def get_images(subreddits, max_images, target_path):
                  user_agent='windows:cbm.projects.imagescraper:v2.0 (by /u/PTTruTH)'
                  )
 
-        submissions = []
+        good_posts = []
         downloads = 0
+        print('Detected Resolution: [' + str(SCREEN_WIDTH) + 'x' + str(SCREEN_HEIGHT) + ']')
 
-        for sub in subreddits:
-            for post in reddit.subreddit(sub).hot(limit=int(max_images)):
+        for sub in subreddits.replace(' ', '').split(','):
+            for post in reddit.subreddit(sub + 'porn').hot(limit=int(_max)):
                 if compatable(post):
-                    submissions.append(post)
+                    good_posts.append(post)
 
-        if len(submissions) == 0:
-            print('No compatable images found.')
+        if len(good_posts) == 0:
+            print('No compatable images found') 
             sys.exit()
             
-        print(str(len(submissions)) + ' images detected.')
+        print(str(len(good_posts)) + ' images detected')
         print('Collecting images...')
         time.sleep(1)
 
-        for post in submissions:
+        for post in good_posts:
             file_name = cleanup_title(post.title) + '.jpg'
-            file = os.path.join(target_path, file_name)
-            new_file = os.path.join(current_path, file_name)
-            score = post.ups
-            if not os.path.exists(file): 
+            stored_file = os.path.join(target_path, file_name)
+            raw_file = os.path.join(current_path, file_name)
+            if not os.path.exists(stored_file): 
                 try:
-                    file = open(file_name,'wb')
-                except FileNotFoundError:
-                    print('File not found.')
+                    _file = open(file_name,'wb')
+                except FileNotFoundError as e:
+                    print('File not found')
                     fileErrors += 1 
                     continue
                 try:
-                    file.write(web.urlopen(cleanup_url(post.url)).read())
-                    file.close()
-                    os.rename(new_file, file)
+                    _file.write(web.urlopen(cleanup_url(post.url)).read())
+                    _file.close()
+                    os.rename(raw_file, stored_file)
                     downloads += 1
-                except Exception as e:
-                    file.close()
-                    os.remove(new_file)
+                except Exception:
+                    print('Unable to write file')
+                    _file.close()
+                    os.remove(raw_file)
                     fileErrors += 1
-                try:
-                    print(file_name + ' (Score: ' + str(score) + ') written.')
-                except UnicodeEncodeError:
-                    print('File written - UnicodeEncodeError.')
-                    encodeErrors += 1
+                print(file_name.encode('ascii', 'ignore').decode() + ' (' + str(post.ups) + ' upvotes) written') 
             else:
-                print('Image already exists.')
+                print('Image already exists')
 
         dels = size_filter(target_path)
-        
-        print(str(downloads - dels) + ' new image(s) downloaded.')
-        print(str(dels) + ' image(s) truncated due to a file size < 300KB.')
-        
+        new_download_count = downloads - dels
+        print(str(new_download_count) + ' new image(s) downloaded')
+        print(str(dels) + ' image(s) truncated due to a file size < 300KB')
         os.startfile(target_path)
-        
-        print("File/HTTP Errors: {}, String Encoding Errors: {}"
-                .format(str(fileErrors),str(encodeErrors)))
-        
+        errors = 'File/HTTP Errors: {}, String Encoding Errors: {}'.format(str(fileErrors),str(encodeErrors))
+        print(errors)
+        print('Opening image directory and exiting...')
+        log(subreddits, new_download_count, errors)
         time.sleep(3)
 
 #####################################################
 #Main----->
 
 #Getting required input from prompts
-reddits = input("Enter subreddit(s) to pull images from spereated with commas and no spaces: ")
-user_max = input("Enter max number of images to pull from each subreddit: ")
-            
-log(reddits)
-
+subs = input("Enter subreddit(s) to pull images from spereated by commas: ")
+_max = input("Enter max number of images to consider from each subreddit: ")
+        
 #Call to get_images with required input
-get_images(reddits.split(','), user_max, get_target_path())
+get_images(subs, _max, get_target_path())
+
 
 
 
