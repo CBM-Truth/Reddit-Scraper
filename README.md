@@ -1,4 +1,4 @@
-# Reddit-Scraper
+# Reddit Scraper
 Functional script that collects backgrounds images from photography subreddits like r/earthporn, r/spaceporn, r/skyporn, etc... 
 The script will work with any subreddit where users put resolution information within post titles.
 # Setup
