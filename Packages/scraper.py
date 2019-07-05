@@ -164,7 +164,7 @@ class Scraper:
                 dels += 1
         return dels
 
-    def get_images(self, subreddits, _max):
+    def scrape(self, subreddits, _max):
         """
         Downloads all compatible images from the passed subreddits, searches for a max of _max from
         each subreddit. All images are placed in the target_path destination at the end of runtime
@@ -233,7 +233,7 @@ if __name__ == '__main__':
     search_limit = input("Enter number of images to scan from each subreddit: ")
 
     scraper = Scraper()
-    scraper.get_images(subs, search_limit)
+    scraper.scrape(subs, search_limit)
 
 
 
