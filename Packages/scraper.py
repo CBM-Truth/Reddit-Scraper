@@ -109,9 +109,10 @@ def cleanup_url(url):
             ret_str += '.jpg'
     return ret_str
 
-
-# post: removes files < 300KB from the argument path. Returns the number of files removed
-# as an integer
+"""
+post: removes files < 300KB from the argument path. Returns the number of files removed
+as an integer
+"""
 def size_filter(main_path):
     dels = 0
     for sub_path in os.listdir(main_path):
@@ -122,83 +123,83 @@ def size_filter(main_path):
     return dels
 
 
-# pre: subreddits is an array of subreddit strings, throws an exception otherwise
-# pre: target_path is a valid directory, throws and exception if otherwise
-# post: downloads all compatible images from the passed subreddits, searches for a max of max_images from
-# each subreddit. All images are placed in the target_path destination at the end of runtime
 def get_images(subreddits, _max):
-        get_target_path()
-        errors = 0
-        downloads = 0
-        reddit = praw.Reddit(
-                 client_id='TB0-ZpHZQF6Qog',
-                 client_secret='Rz4XNGcDBZVMQE45IpB0EBl-p3s',
-                 user_agent='windows:cbm.projects.redditscraper:v2.0 (by /u/PTTruTH)'
-                 )
-        print('Detected Resolution: [{}x{}]'.format(str(SCREEN_WIDTH), str(SCREEN_HEIGHT)))
+    """
+    Downloads all compatible images from the passed subreddits, searches for a max of _max from
+    each subreddit. All images are placed in the target_path destination at the end of runtime
+    :param subreddits: array of subreddit name strings
+    :param _max: maximum number of posts to scrape
+    """
 
-        subs = [sub + 'porn' if 'porn' not in sub else sub
-                for sub in subreddits.replace(' ', '').split(',')]
+    get_target_path()
+    errors = 0
+    downloads = 0
+    reddit = praw.Reddit(
+             client_id='TB0-ZpHZQF6Qog',
+             client_secret='Rz4XNGcDBZVMQE45IpB0EBl-p3s',
+             user_agent='windows:cbm.projects.redditscraper:v2.0 (by /u/PTTruTH)'
+             )
+    print('Detected Resolution: [{}x{}]'.format(str(SCREEN_WIDTH), str(SCREEN_HEIGHT)))
 
-        compatible_posts = [post for sub in subs for post in reddit.subreddit(sub).hot(limit=int(_max))
-                            if compatible(post)]
+    subs = [sub + 'porn' if 'porn' not in sub else sub
+            for sub in subreddits.replace(' ', '').split(',')]
 
-        if len(compatible_posts) == 0:
-            print('No compatible images found')
-            print('Exiting...')
-            sys.exit()
-            
-        print(str(len(compatible_posts)) + ' compatible images detected')
-        print('Collecting images...\n')
-        time.sleep(1)
+    compatible_posts = [post for sub in subs for post in reddit.subreddit(sub).hot(limit=int(_max))
+                        if compatible(post)]
 
-        for post in compatible_posts:
-            filename = cleanup_title(post.title)
-            if len(filename) >= MAX_FILENAME_LENGTH:
-                print('Image name is too long, renaming file...')
-                mid = int(len(filename) / 2)
-                filename = filename[:mid] + '.jpg'
-            stored_file = os.path.join(target_path, filename)
-            raw_file = os.path.join(CURRENT_PATH, filename)  
-            _file = open(filename, 'wb')
-            # _file.write(web.urlopen(cleanup_url(post.url)).read())
-            # _file.close()
-            # os.rename(raw_file, stored_file)
-            # downloads += 1
-            try:
-                _file.write(web.urlopen(cleanup_url(post.url)).read())
-                _file.close()
-                os.rename(raw_file, stored_file)
-                downloads += 1
-            except Exception:
-                print('Unable to write file: ' + filename + ' (' + post.url + ')')
-                _file.close()
-                os.remove(raw_file)
-                errors += 1
-            print(filename.encode('ascii', 'ignore').decode() + ' (' + str(post.ups) + ' upvote(s)) written') 
+    if len(compatible_posts) == 0:
+        print('No compatible images found')
+        print('Exiting...')
+        sys.exit()
 
-        dels = size_filter(target_path)
-        new_download_count = downloads - dels
-        print('\n' + str(new_download_count) + ' new image(s) downloaded')
+    print(str(len(compatible_posts)) + ' compatible images detected')
+    print('Collecting images...\n')
+    time.sleep(1)
 
-        if dels > 0:
-            print(str(dels) + ' image(s) smaller than 300KB removed')
+    for post in compatible_posts:
+        filename = cleanup_title(post.title)
+        if len(filename) >= MAX_FILENAME_LENGTH:
+            print('Image name is too long, renaming file...')
+            mid = int(len(filename) / 2)
+            filename = filename[:mid] + '.jpg'
+        stored_file = os.path.join(target_path, filename)
+        raw_file = os.path.join(CURRENT_PATH, filename)
+        _file = open(filename, 'wb')
+        try:
+            _file.write(web.urlopen(cleanup_url(post.url)).read())
+            _file.close()
+            os.rename(raw_file, stored_file)
+            downloads += 1
+        except Exception as e:
+            print(str(e))
+            print('Unable to write file: ' + filename + ' (' + post.url + ')')
+            _file.close()
+            os.remove(raw_file)
+            errors += 1
+        print(filename.encode('ascii', 'ignore').decode() + ' (' + str(post.ups) + ' upvote(s)) written')
 
-        errors = 'HTTP Errors: {}'.format(str(errors))
-        print(errors)
-        print('Opening image directory and exiting...')
-        log(subreddits, new_download_count, errors)
-        time.sleep(1.75)
-        os.startfile(target_path)
+    dels = size_filter(target_path)
+    new_download_count = downloads - dels
+    print('\n' + str(new_download_count) + ' new image(s) downloaded')
 
-# Main--
+    if dels > 0:
+        print(str(dels) + ' image(s) smaller than 300KB removed')
 
-# Getting required input from prompts
-subreddit_list = input("Enter subreddit(s) to pull images from separated by commas: ")
-limit = input("Enter number of images to scan from each subreddit: ")
-        
-# Call to get_images with input
-get_images(subreddit_list, limit)
+    errors = 'HTTP Errors: {}'.format(str(errors))
+    print(errors)
+    print('Opening image directory and exiting...')
+    log(subreddits, new_download_count, errors)
+    time.sleep(1.75)
+    os.startfile(target_path)
+
+
+if __name__ == '__main__':
+    # Getting required input from prompts
+    subreddit_list = input("Enter subreddit(s) to pull images from separated by commas: ")
+    limit = input("Enter number of images to scan from each subreddit: ")
+
+    # Call to get_images with input
+    get_images(subreddit_list, limit)
 
 
 

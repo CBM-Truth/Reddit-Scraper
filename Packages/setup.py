@@ -9,7 +9,7 @@ sys.argv.append('build_exe')
 
 base = None
 
-executables = [Executable("main.py", base=base)]
+executables = [Executable("scraper.py", base=base)]
 
 packages = ["idna", "praw", "os", "time",
             "sys", "urllib.request", "ctypes"]
