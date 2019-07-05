@@ -12,7 +12,7 @@ base = None
 executables = [Executable("scraper.py", base=base)]
 
 packages = ["idna", "praw", "os", "time",
-            "sys", "urllib.request", "ctypes"]
+            "sys", "urllib.request", "ctypes", "shutil"]
             
 options = {
     'build_exe': {
