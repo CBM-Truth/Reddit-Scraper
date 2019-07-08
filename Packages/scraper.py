@@ -7,25 +7,20 @@ import os.path
 import sys
 import time
 
-SCREEN_WIDTH = c.windll.user32.GetSystemMetrics(0)
-SCREEN_HEIGHT = c.windll.user32.GetSystemMetrics(1)
-MAX_FILENAME_LENGTH = 170
-MIN_FILE_SIZE = 300
-DIRECTORY_FILE = 'dir.txt'
-DEFAULT_CLIENT_ID = 'TB0-ZpHZQF6Qog'
-DEFAULT_CLIENT_SECRET = 'Rz4XNGcDBZVMQE45IpB0EBl-p3s'
-DEFAULT_USER_AGENT = 'windows:cbm.projects.redditscraper:v2.0 (by /u/PTTruTH)'
-
 
 class Scraper:
     """
     Reddit Scraper Object
     """
 
-    def __init__(self, client_id=DEFAULT_CLIENT_ID, client_secret=DEFAULT_CLIENT_SECRET,
-                 user_agent=DEFAULT_USER_AGENT):
-        self.__target_directory = self.__load_target_directory()
+    def __init__(self, client_id='', client_secret='', user_agent=''):
+        self.SCREEN_WIDTH = c.windll.user32.GetSystemMetrics(0)
+        self.SCREEN_HEIGHT = c.windll.user32.GetSystemMetrics(1)
+        self.MAX_FILENAME_LENGTH = 170
+        self.MIN_FILE_SIZE = 300
         self.__current_directory = os.getcwd()
+        self.__directory_file = 'dir.txt'
+        self.__target_directory = self.__load_target_directory()
         self.__reddit = praw.Reddit(
             client_id=client_id,
             client_secret=client_secret,
@@ -39,21 +34,20 @@ class Scraper:
         target path
         :return: Target directory
         """
-        if not os.path.exists(DIRECTORY_FILE):
+        if not os.path.exists(self.__directory_file):
             directory = input('Please enter a destination directory: ')
             self.__create_target_directory(directory)
-        with open(DIRECTORY_FILE) as f:
+        with open(self.__directory_file) as f:
             path = f.read()
             f.close()
         return path
 
-    @staticmethod
-    def __create_target_directory(directory):
+    def __create_target_directory(self, directory):
         """
         Writes directory to a new text file named 'dir.txt'
         :param directory: directory to store scraped images
         """
-        with open(DIRECTORY_FILE, 'w') as f:
+        with open(self.__directory_file, 'w') as f:
             f.write(directory)
             f.close()
 
@@ -73,7 +67,7 @@ class Scraper:
             f.write(current_time + '\n')
             f.write('Subreddits searched: ' + str(reddits) + '\n')
             f.write('Images downloaded: ' + str(dls) + '\n')
-            f.write('Encountered errors: ' + errs + '\n')
+            f.write('Encountered errors: ' + str(errs) + '\n')
             f.write('--------------------------------\n')
             f.close()
 
@@ -122,7 +116,7 @@ class Scraper:
         width, height = self.__get_resolution(post.title)
         good_domain = "i.redd.it" in post.domain or "imgur" in post.domain
         on_disk = os.path.exists(os.path.join(self.__target_directory, self.__cleanup_title(post.title)))
-        correct_dimensions = width >= SCREEN_WIDTH and width > height >= SCREEN_HEIGHT
+        correct_dimensions = width >= self.SCREEN_WIDTH and width > height >= self.SCREEN_HEIGHT
         return correct_dimensions and good_domain and not on_disk
 
     @staticmethod
@@ -150,8 +144,7 @@ class Scraper:
             ret_str += '.jpg'
         return ret_str
 
-    @staticmethod
-    def __size_filter(directory):
+    def __size_filter(self, directory):
         """
         Removes files < 300KB from the argument directory
         :return: number of files removed as an integer
@@ -159,7 +152,7 @@ class Scraper:
         dels = 0
         for subdir in os.listdir(directory):
             _file = os.path.join(directory, subdir)
-            if os.path.getsize(_file) / 1000 < MIN_FILE_SIZE:
+            if os.path.getsize(_file) / 1000 < self.MIN_FILE_SIZE:
                 os.remove(_file)
                 dels += 1
         return dels
@@ -173,7 +166,7 @@ class Scraper:
         """
         errors = 0
         downloads = 0
-        print('Detected Resolution: [{}x{}]'.format(str(SCREEN_WIDTH), str(SCREEN_HEIGHT)))
+        print('Detected Resolution: [{}x{}]'.format(str(self.SCREEN_WIDTH), str(self.SCREEN_HEIGHT)))
 
         subs = [sub + 'porn' if 'porn' not in sub else sub
                 for sub in subreddits.replace(' ', '').split(',')]
@@ -192,7 +185,7 @@ class Scraper:
 
         for post in compatible_posts:
             filename = self.__cleanup_title(post.title)
-            if len(filename) >= MAX_FILENAME_LENGTH:
+            if len(filename) >= self.MAX_FILENAME_LENGTH:
                 print('Image name is too long, renaming file...')
                 m = int(len(filename) / 2)
                 filename = filename[:m] + '.jpg'
@@ -218,12 +211,13 @@ class Scraper:
         print('\n' + str(new_download_count) + ' new image(s) downloaded')
 
         if dels > 0:
-            print('{} image(s) smaller than {}KB removed'.format(str(dels), str(MIN_FILE_SIZE)))
+            print('{} image(s) smaller than {}KB removed'.format(str(dels), str(self.MIN_FILE_SIZE)))
 
-        errors = 'Failed to download {} images'.format(str(errors))
-        print(errors)
-        print('Opening image directory and exiting...')
+        if errors > 0:
+            print('Failed to download {} images'.format(str(errors)))
+
         self.__log(subreddits, new_download_count, errors)
+        print('Opening image directory and exiting...')
         time.sleep(2)
         os.startfile(self.__target_directory)
 
@@ -232,18 +226,11 @@ if __name__ == '__main__':
     subs = input("Enter subreddit(s) to pull images from separated by commas: ")
     search_limit = input("Enter number of images to scan from each subreddit: ")
 
-    scraper = Scraper()
+    scraper = Scraper(
+        client_id='TB0-ZpHZQF6Qog',
+        client_secret='Rz4XNGcDBZVMQE45IpB0EBl-p3s',
+        user_agent='windows:cbm.projects.redditscraper:v2.0 (by /u/PTTruTH)'
+    )
     scraper.scrape(subs, search_limit)
 
 
-
-
-
-
- 
-
-
-    
-    
-
-                     
